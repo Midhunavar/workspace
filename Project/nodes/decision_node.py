@@ -20,18 +20,22 @@ def decision_node(state: ReviewState) -> dict:
     # The number of high-severity issues is the sum over all files.
     high_severity_issues = sum(r.get("severity_counts", {}).get("HIGH", 0) for r in state.get("security_results", []))
 
-    decision = "auto_approve"
+    # Determine which gates have failed
+    fails_security = security_score < config.security_threshold or high_severity_issues > 0
+    fails_quality = pylint_score < config.pylint_threshold
+    fails_coverage = coverage < config.coverage_threshold
+    fails_ai_confidence = ai_score < config.ai_confidence_threshold
+    fails_documentation = documentation_coverage < config.documentation_threshold
 
-    if security_score < config.security_threshold or high_severity_issues > 0:
+    # Apply precedence to determine the final decision
+    if fails_security:
         decision = "critical_escalation"
-    elif pylint_score < config.pylint_threshold:
+    elif fails_quality or fails_coverage or fails_ai_confidence:
         decision = "human_review"
-    elif coverage < config.coverage_threshold:
-        decision = "human_review"
-    elif ai_score < config.ai_confidence_threshold:
-        decision = "human_review"
-    elif documentation_coverage < config.documentation_threshold:
+    elif fails_documentation:
         decision = "documentation_review"
+    else:
+        decision = "auto_approve"
 
     has_critical_issues = decision == "critical_escalation"
 
