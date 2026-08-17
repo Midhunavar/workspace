@@ -21,8 +21,15 @@ from nodes.decision_node import decision_node
 from nodes.human_review_node import human_review_node
 from nodes.report_node import report_node
 
+PARALLEL_ANALYSIS_NODES = [
+    "security",
+    "quality",
+    "coverage",
+    "ai_review",
+    "documentation",
+]
 
-def route_decision(state: ReviewState) -> str:
+def route_after_decision(state: ReviewState) -> str:
     if state.get("decision") == "auto_approve":
         return "report"
 
@@ -87,56 +94,12 @@ def build_review_graph():
     )
 
     # Fan-out
-    graph.add_edge(
-        "ingest",
-        "security",
-    )
-
-    graph.add_edge(
-        "ingest",
-        "quality",
-    )
-
-    graph.add_edge(
-        "ingest",
-        "coverage",
-    )
-
-    graph.add_edge(
-        "ingest",
-        "ai_review",
-    )
-
-    graph.add_edge(
-        "ingest",
-        "documentation",
-    )
+    for node in PARALLEL_ANALYSIS_NODES:
+        graph.add_edge("ingest", node)
 
     # Fan-in
-    graph.add_edge(
-        "security",
-        "coordinator",
-    )
-
-    graph.add_edge(
-        "quality",
-        "coordinator",
-    )
-
-    graph.add_edge(
-        "coverage",
-        "coordinator",
-    )
-
-    graph.add_edge(
-        "ai_review",
-        "coordinator",
-    )
-
-    graph.add_edge(
-        "documentation",
-        "coordinator",
-    )
+    for node in PARALLEL_ANALYSIS_NODES:
+        graph.add_edge(node, "coordinator")
 
     # Sequential stages
     graph.add_edge(
@@ -147,7 +110,7 @@ def build_review_graph():
     # Conditional routing
     graph.add_conditional_edges(
         "decision",
-        route_decision,
+        route_after_decision,
         {
             "report": "report",
             "human_review": "human_review",
