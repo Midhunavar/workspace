@@ -33,7 +33,13 @@ def report_node(state: ReviewState) -> dict:
             action = human_decision.get("action") or (human_decision.get("resume") or {}).get("action")
         else:
             # best-effort: try attribute access (e.g. Command objects)
-            action = getattr(human_decision, "action", None) or getattr(human_decision, "resume", None)
+            action = getattr(human_decision, "action", None)
+            if action is None:
+                resume = getattr(human_decision, "resume", None)
+                if isinstance(resume, dict):
+                    action = resume.get("action")
+                elif isinstance(resume, str):
+                    action = resume
 
     if decision != "auto_approve" and action:
         if action == "approve":
