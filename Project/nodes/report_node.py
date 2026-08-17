@@ -21,14 +21,25 @@ def report_node(state: ReviewState) -> dict:
 
     final_decision = decision
 
-    if decision != "auto_approve" and human_decision:
-        action = human_decision.get("action")
+    # support multiple shapes for `human_decision` used in tests and runtime:
+    # - a plain string: "approve" / "reject"
+    # - a dict with an "action" key
+    # - a dict with a nested "resume": {"action": ...}
+    action = None
+    if human_decision:
+        if isinstance(human_decision, str):
+            action = human_decision
+        elif isinstance(human_decision, dict):
+            action = human_decision.get("action") or (human_decision.get("resume") or {}).get("action")
+        else:
+            # best-effort: try attribute access (e.g. Command objects)
+            action = getattr(human_decision, "action", None) or getattr(human_decision, "resume", None)
 
+    if decision != "auto_approve" and action:
         if action == "approve":
-            final_decision = "approved"
-
+            final_decision = "approved_by_reviewer"
         elif action == "reject":
-            final_decision = "rejected"
+            final_decision = "rejected_by_reviewer"
 
     report = {
         "review_id": state.get("review_id"),
