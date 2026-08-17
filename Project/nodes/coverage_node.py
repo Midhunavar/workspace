@@ -5,3 +5,27 @@ Implement coverage_node(state): run CoverageAgent on state["files"] and return
 {"coverage_results": ...}; on failure return [] plus an errors entry. See the problem description
 for the contract.
 """
+from state import ReviewState
+from agents.coverage_agent import CoverageAgent
+
+
+def coverage_node(state: ReviewState) -> dict:
+    try:
+        agent = CoverageAgent()
+
+        return {
+            "coverage_results": agent.analyze(
+                state.get("files", [])
+            )
+        }
+
+    except Exception as exc:
+        return {
+            "coverage_results": [],
+            "errors": [
+                {
+                    "node": "coverage",
+                    "error": str(exc),
+                }
+            ],
+        }
