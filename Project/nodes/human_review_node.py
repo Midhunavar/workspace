@@ -11,20 +11,20 @@ from state import ReviewState
 
 
 def human_review_node(state: ReviewState) -> dict:
+    # Build interrupt payload matching live-test expectations:
+    # keys: review_id, decision, metrics, high_severity_issues, question
+    high_severity_issues = sum(
+        r.get("severity_counts", {}).get("HIGH", 0) for r in state.get("security_results", [])
+    )
+
     payload = {
         "review_id": state.get("review_id"),
         "decision": state.get("decision"),
-        "decision_metrics": state.get(
-            "decision_metrics",
-            {},
-        ),
-        "critical_issues": state.get(
-            "critical_issues",
-            [],
-        ),
-        "message": (
-            "Code review requires human approval. "
-            "Approve or reject this review."
+        "metrics": state.get("decision_metrics", {}),
+        "high_severity_issues": high_severity_issues,
+        "critical_issues": state.get("critical_issues", []),
+        "question": (
+            "Code review requires human approval. Approve or reject this review."
         ),
     }
 
