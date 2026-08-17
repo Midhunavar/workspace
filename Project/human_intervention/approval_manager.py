@@ -45,9 +45,19 @@ def resume_review(
     return result
 
 
-def approve_review(review_id: str, workflow_override=None):
+def _normalize_approve_args(a, b=None):
+    # Accept either (review_id, workflow_override) or (workflow_override, review_id)
+    if isinstance(a, str):
+        return a, b
+    # assume a is a workflow override-like object
+    return b, a
+
+
+def approve_review(a, b=None):
+    review_id, workflow_override = _normalize_approve_args(a, b)
     return resume_review(review_id, "approve", workflow_override)
 
 
-def reject_review(review_id: str, workflow_override=None):
+def reject_review(a, b=None):
+    review_id, workflow_override = _normalize_approve_args(a, b)
     return resume_review(review_id, "reject", workflow_override)
