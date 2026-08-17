@@ -12,3 +12,32 @@ Implement the exact key schema — identity/input, the five parallel analysis-re
 keys, the sequential-stage keys, and the errors reducer — as specified in the problem
 description.
 """
+from typing import Annotated, List, Dict, TypedDict
+import operator
+
+
+class ReviewState(TypedDict, total=False):
+    # Identity / input
+    review_id: str
+    source: str
+    files: List[Dict]
+    pr_details: Dict
+
+    # Parallel analysis results
+    security_results: List[Dict]
+    quality_results: List[Dict]
+    coverage_results: List[Dict]
+    ai_reviews: List[Dict]
+    documentation_results: List[Dict]
+
+    # Sequential stages
+    coordination_summary: Dict
+    decision: str
+    critical_issues: List[Dict]
+    decision_metrics: Dict
+    human_decision: Dict
+    report: Dict
+    workflow_complete: bool
+
+    # Parallel-safe reducer
+    errors: Annotated[List[Dict], operator.add]
