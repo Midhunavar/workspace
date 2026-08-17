@@ -8,7 +8,7 @@ problem description for the contract.
 """
 import uuid
 
-from human_intervention.approval_manager import resume_review as resume_review_from_manager
+from human_intervention.approval_manager import approve_review, reject_review
 from services.review_store import review_store
 from streamlit_UI import render_app
 from workflow import get_workflow
@@ -47,14 +47,14 @@ def run_code_review(files, source, pr_details):
 
 def approve_code(thread_id):
     """Resume a paused review with an 'approve' action."""
-    resumed_state = resume_review_from_manager(thread_id, "approve")
+    resumed_state = approve_review(thread_id)
     review_store.save_review(resumed_state)
     return resumed_state
 
 
 def reject_code(thread_id):
     """Resume a paused review with a 'reject' action."""
-    resumed_state = resume_review_from_manager(thread_id, "reject")
+    resumed_state = reject_review(thread_id)
     review_store.save_review(resumed_state)
     return resumed_state
 
