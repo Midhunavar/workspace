@@ -73,7 +73,7 @@ def _clamp(value, low, high):
 
 class DocumentationAgent(BaseAgent):
 
-    def __init__(self, name="documentation"):
+    def __init__(self, config, name="documentation"):
         super().__init__(name)
         self.model = get_review_llm()
 
