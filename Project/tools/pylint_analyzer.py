@@ -15,7 +15,7 @@ import tempfile
 from typing import Any, Dict
 
 
-def run_pylint(code: str, filename: str) -> Dict[str, Any]:
+def run_pylint(code: str) -> Dict[str, Any]:
     """Run PyLint on one file and return its numeric score and top issues."""
     temp_path = ""
     try:
@@ -35,10 +35,10 @@ def run_pylint(code: str, filename: str) -> Dict[str, Any]:
              "message": m.get("message"), "line": m.get("line")}
             for m in messages[:10]
         ]
-        return {"filename": filename, "pylint_score": pylint_score,
+        return {"pylint_score": pylint_score,
                 "total_issues": len(messages), "issues": issues}
     except Exception as error:
-        return {"filename": filename, "pylint_score": 5.0, "total_issues": 0,
+        return {"pylint_score": 5.0, "total_issues": 0,
                 "issues": [], "error": str(error)}
     finally:
         if temp_path and os.path.exists(temp_path):
