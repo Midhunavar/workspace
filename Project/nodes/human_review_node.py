@@ -34,8 +34,8 @@ def human_review_node(state: ReviewState) -> dict:
         ),
     }
 
-    human_decision = interrupt(
+    interrupt(
         interrupt_payload
     )
 
-    return {"human_decision": human_decision}
+    return {}
