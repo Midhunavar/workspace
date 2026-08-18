@@ -7,11 +7,12 @@ contract.
 """
 from state import ReviewState
 from agents.ai_review_agent import AIReviewAgent
+from config import config
 
 
 def ai_review_node(state: ReviewState) -> dict:
     try:
-        agent = AIReviewAgent()
+        agent = AIReviewAgent(config)
 
         return {
             "ai_reviews": agent.analyze(
