@@ -11,25 +11,31 @@ from state import ReviewState
 
 
 def human_review_node(state: ReviewState) -> dict:
-    # Build interrupt payload matching live-test expectations:
-    # keys: review_id, decision, metrics, high_severity_issues, question
-    high_severity_issues = sum(
-        r.get("severity_counts", {}).get("HIGH", 0) for r in state.get("security_results", [])
+    metrics = state.get(
+        "decision_metrics",
+        {},
     )
 
-    payload = {
-        "review_id": state.get("review_id"),
-        "decision": state.get("decision"),
-        "metrics": state.get("decision_metrics", {}),
-        "high_severity_issues": high_severity_issues,
-        "critical_issues": state.get("critical_issues", []),
+    interrupt_payload = {
+        "review_id": state.get(
+            "review_id"
+        ),
+        "decision": state.get(
+            "decision"
+        ),
+        "metrics": metrics,
+        "high_severity_issues": metrics.get(
+            "high_severity_issues",
+            0,
+        ),
         "question": (
-            "Code review requires human approval. Approve or reject this review."
+            "The code review requires human intervention. "
+            "Do you approve or reject this review?"
         ),
     }
 
-    human_decision = interrupt(payload)
+    human_decision = interrupt(
+        interrupt_payload
+    )
 
-    return {
-        "human_decision": human_decision
-    }
+    return {"human_decision": human_decision}
