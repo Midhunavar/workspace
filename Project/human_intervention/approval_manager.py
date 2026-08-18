@@ -5,59 +5,43 @@ Implement approve_review(compiled_graph, thread_id) and reject_review(...): each
 graph run on the given thread with the reviewer's decision via Command(resume=...). See the problem
 description for the contract.
 """
-from functools import partial
-
 from langgraph.types import Command
 
-from workflow import get_workflow
-
-
-def resume_review(
-    review_id: str,
-    action: str,
-    workflow_override=None,
-):
-    if action not in {
-        "approve",
-        "reject",
-    }:
-        raise ValueError(
-            "action must be 'approve' or 'reject'"
-        )
-
-    workflow = workflow_override or get_workflow()
-
+def approve_review(
+    compiled_graph,
+    thread_id: str,
+) -> dict:
     config = {
         "configurable": {
-            "thread_id": review_id
+            "thread_id": thread_id
         }
     }
 
-    result = workflow.invoke(
+    return compiled_graph.invoke(
         Command(
             resume={
-                "action": action
+                "action": "approve"
             }
         ),
         config=config,
     )
 
-    return result
 
+def reject_review(
+    compiled_graph,
+    thread_id: str,
+) -> dict:
+    config = {
+        "configurable": {
+            "thread_id": thread_id
+        }
+    }
 
-def _normalize_approve_args(a, b=None):
-    # Accept either (review_id, workflow_override) or (workflow_override, review_id)
-    if isinstance(a, str):
-        return a, b
-    # assume a is a workflow override-like object
-    return b, a
-
-
-def approve_review(a, b=None):
-    review_id, workflow_override = _normalize_approve_args(a, b)
-    return resume_review(review_id, "approve", workflow_override)
-
-
-def reject_review(a, b=None):
-    review_id, workflow_override = _normalize_approve_args(a, b)
-    return resume_review(review_id, "reject", workflow_override)
+    return compiled_graph.invoke(
+        Command(
+            resume={
+                "action": "reject"
+            }
+        ),
+        config=config,
+    )
