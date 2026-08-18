@@ -120,12 +120,16 @@ def decision_node(state: ReviewState) -> dict:
         decision = "critical_escalation"
         has_critical_issues = True
 
+    # Documentation review is a special case of human review
+    elif avg_documentation < documentation_threshold:
+        decision = "documentation_review"
+        has_critical_issues = False
+
     # Otherwise normal human review
     elif (
         avg_quality_score < pylint_threshold
         or avg_coverage < coverage_threshold
         or avg_ai_score < ai_confidence_threshold
-        or avg_documentation < documentation_threshold
     ):
         decision = "human_review"
         has_critical_issues = False
