@@ -6,7 +6,7 @@ StateGraph that wires START to ingest, fans out ingest to the five analysis node
 the coordinator, then coordinator to decision with conditional edges to report or human_review, and
 human_review to report to END. See the problem description for the node names and routing contract.
 """
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
 
 from state import ReviewState
 
@@ -39,8 +39,11 @@ def route_after_decision(state: ReviewState) -> str:
 def build_review_graph():
     graph = StateGraph(ReviewState)
 
-    # Nodes
-    graph.add_node("ingest", ingest_node)
+    # Register nodes using exact required names.
+    graph.add_node(
+        "ingest",
+        ingest_node,
+    )
 
     graph.add_node(
         "security",
@@ -94,27 +97,33 @@ def build_review_graph():
     )
 
     # Fan-out
-    for node in PARALLEL_ANALYSIS_NODES:
-        graph.add_edge("ingest", node)
+    for node_name in PARALLEL_ANALYSIS_NODES:
+        graph.add_edge(
+            "ingest",
+            node_name,
+        )
 
     # Fan-in
-    for node in PARALLEL_ANALYSIS_NODES:
-        graph.add_edge(node, "coordinator")
+    for node_name in PARALLEL_ANALYSIS_NODES:
+        graph.add_edge(
+            node_name,
+            "coordinator",
+        )
 
-    # Sequential stages
+    # Sequential pipeline
     graph.add_edge(
         "coordinator",
         "decision",
     )
 
-    # Conditional routing
+    # Conditional route
     graph.add_conditional_edges(
         "decision",
         route_after_decision,
-        {
-            "report": "report",
-            "human_review": "human_review",
-        },
+        [
+            "report",
+            "human_review",
+        ],
     )
 
     graph.add_edge(
