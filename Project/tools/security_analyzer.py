@@ -27,7 +27,7 @@ SECURITY_PATTERNS = [
 ]
 
 
-def scan_security(code: str, filename: str) -> Dict[str, Any]:
+def scan_security(code: str) -> Dict[str, Any]:
     """Return the regex-detected vulnerabilities and severity counts for one file."""
     vulnerabilities = []
     for pattern, severity, description in SECURITY_PATTERNS:
@@ -41,4 +41,5 @@ def scan_security(code: str, filename: str) -> Dict[str, Any]:
         level: sum(1 for v in vulnerabilities if v["severity"] == level)
         for level in ("HIGH", "MEDIUM", "LOW")
     }
-    return {"filename": filename, "vulnerabilities": vulnerabilities, "severity_counts": severity_counts}
+    return {"vulnerabilities": vulnerabilities, "severity_counts": severity_counts}
+
