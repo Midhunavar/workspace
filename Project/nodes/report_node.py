@@ -4,79 +4,120 @@ Report node.
 Implement report_node(state): fold human_decision into the final decision, build the report, and set
 workflow_complete. See the problem description for the folding contract.
 """
-from datetime import datetime, timezone
-
 from state import ReviewState
 
 
+def _priority_for_decision(decision: str) -> str:
+    if decision == "critical_escalation":
+        return "critical"
+
+    if decision == "human_review":
+        return "high"
+
+    if decision == "auto_approve":
+        return "low"
+
+    if decision == "approved_by_reviewer":
+        return "high"
+
+    if decision == "rejected_by_reviewer":
+        return "critical"
+
+    return "medium"
+
+
 def report_node(state: ReviewState) -> dict:
-    decision = state.get(
+    pipeline_decision = state.get(
         "decision",
-        "human_review",
+        "auto_approve",
     )
 
     human_decision = state.get(
-        "human_decision"
+        "human_decision",
+        "",
     )
 
-    final_decision = decision
+    # Human decision overrides pipeline decision
+    # only when HITL actually occurred.
+    if human_decision == "approve":
+        final_decision = "approved_by_reviewer"
 
-    # support multiple shapes for `human_decision` used in tests and runtime:
-    # - a plain string: "approve" / "reject"
-    # - a dict with an "action" key
-    # - a dict with a nested "resume": {"action": ...}
-    action = None
-    if human_decision:
-        if isinstance(human_decision, str):
-            action = human_decision
-        elif isinstance(human_decision, dict):
-            action = human_decision.get("action") or (human_decision.get("resume") or {}).get("action")
-        else:
-            # best-effort: try attribute access (e.g. Command objects)
-            action = getattr(human_decision, "action", None)
-            if action is None:
-                resume = getattr(human_decision, "resume", None)
-                if isinstance(resume, dict):
-                    action = resume.get("action")
-                elif isinstance(resume, str):
-                    action = resume
+    elif human_decision == "reject":
+        final_decision = "rejected_by_reviewer"
 
-    if decision != "auto_approve" and action:
-        if action == "approve":
-            final_decision = "approved_by_reviewer"
-        elif action == "reject":
-            final_decision = "rejected_by_reviewer"
+    else:
+        final_decision = pipeline_decision
+
+    metrics = state.get(
+        "decision_metrics",
+        {},
+    )
+
+    key_findings = []
+    action_items = []
+
+    if metrics.get("high_severity_issues", 0) > 0:
+        key_findings.append(
+            "High-severity security issues were detected."
+        )
+        action_items.append(
+            "Resolve all high-severity security issues."
+        )
+
+    if metrics.get("security_score", 0) < 8.0:
+        key_findings.append(
+            "Security score is below the required threshold."
+        )
+        action_items.append(
+            "Address security concerns before approval."
+        )
+
+    if metrics.get("pylint_score", 0) < 7.0:
+        key_findings.append(
+            "Code quality score is below the required threshold."
+        )
+        action_items.append(
+            "Resolve code-quality issues identified by PyLint."
+        )
+
+    if metrics.get("coverage", 0) < 80.0:
+        key_findings.append(
+            "Test coverage is below the required threshold."
+        )
+        action_items.append(
+            "Add tests to improve coverage."
+        )
+
+    if metrics.get("ai_score", 0) < 0.8:
+        key_findings.append(
+            "Holistic AI review score is below the threshold."
+        )
+        action_items.append(
+            "Review the AI findings and improve the implementation."
+        )
+
+    if metrics.get(
+        "documentation_coverage",
+        0,
+    ) < 70.0:
+        key_findings.append(
+            "Documentation coverage is below the threshold."
+        )
+        action_items.append(
+            "Add missing documentation and docstrings."
+        )
 
     report = {
-        "review_id": state.get("review_id"),
-        "timestamp": datetime.now(
-            timezone.utc
-        ).isoformat(),
+        "review_id": state.get(
+            "review_id"
+        ),
+        "priority": _priority_for_decision(
+            final_decision
+        ),
+        "metrics": metrics,
+        "key_findings": key_findings,
+        "action_items": action_items,
         "decision": final_decision,
-        "metrics": state.get(
-            "decision_metrics",
-            {},
-        ),
-        "coordination_summary": state.get(
-            "coordination_summary",
-            {},
-        ),
-        "critical_issues": state.get(
-            "critical_issues",
-            [],
-        ),
-        "human_decision": human_decision,
-        "errors": state.get(
-            "errors",
-            [],
-        ),
-        "files": [
-            file_data.get("filename")
-            for file_data in state.get(
-                "files",
-                [],
-            )
-        ],
     }
 
     return {
