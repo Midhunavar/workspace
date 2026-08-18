@@ -12,7 +12,7 @@ import ast
 from typing import Any, Dict, List
 
 
-def estimate_coverage(code: str, filename: str) -> Dict[str, Any]:
+def estimate_coverage(code: str) -> Dict[str, Any]:
     """Estimate coverage as the share of testable items that have a matching test."""
     try:
         tree = ast.parse(code)
@@ -38,8 +38,9 @@ def estimate_coverage(code: str, filename: str) -> Dict[str, Any]:
             f"{item['type'].capitalize()} '{item['name']}' at line {item['line']}"
             for item in testable if item["name"] not in covered
         ][:5]
-        return {"filename": filename, "coverage_estimate": coverage_estimate,
+        return {"coverage_estimate": coverage_estimate,
                 "total_testable_items": total, "missing_tests": missing_tests}
     except Exception as error:
-        return {"filename": filename, "coverage_estimate": 0.0,
+        return {"coverage_estimate": 0.0,
                 "total_testable_items": 0, "missing_tests": [], "error": str(error)}
+
