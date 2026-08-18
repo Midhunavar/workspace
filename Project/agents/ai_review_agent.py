@@ -39,7 +39,8 @@ def _parse_json(text):
             if isinstance(item, dict):
                 parsed = item
                 break
-        return {}
+        else:
+            return {}
     # If the dict contains a nested JSON string in common fields, parse that
     if isinstance(parsed, dict):
         for key in ("text", "content", "message"):
@@ -73,7 +74,7 @@ def _clamp(value, low, high):
 
 class AIReviewAgent(BaseAgent):
 
-    def __init__(self, name="ai_review"):
+    def __init__(self, config, name="ai_review"):
         super().__init__(name)
         self.model = get_review_llm()
 
