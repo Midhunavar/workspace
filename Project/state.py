@@ -23,21 +23,21 @@ class ReviewState(TypedDict, total=False):
     files: List[Dict]
     pr_details: Dict
 
-    # Parallel analysis results
+    # Five parallel analysis results
     security_results: List[Dict]
     quality_results: List[Dict]
     coverage_results: List[Dict]
     ai_reviews: List[Dict]
     documentation_results: List[Dict]
 
-    # Sequential stages
+    # Sequential results
     coordination_summary: Dict
     decision: str
-    critical_issues: List[Dict]
+    has_critical_issues: bool
     decision_metrics: Dict
-    human_decision: Dict
+    human_decision: str
     report: Dict
     workflow_complete: bool
 
-    # Parallel-safe reducer
+    # Reducer required for parallel nodes
     errors: Annotated[List[Dict], operator.add]
