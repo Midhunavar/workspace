@@ -7,11 +7,12 @@ for the contract.
 """
 from state import ReviewState
 from agents.coverage_agent import CoverageAgent
+from config import config
 
 
 def coverage_node(state: ReviewState) -> dict:
     try:
-        agent = CoverageAgent()
+        agent = CoverageAgent(config)
 
         return {
             "coverage_results": agent.analyze(
