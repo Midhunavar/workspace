@@ -7,11 +7,12 @@ for the contract.
 """
 from state import ReviewState
 from agents.quality_agent import QualityAgent
+from config import config
 
 
 def quality_node(state: ReviewState) -> dict:
     try:
-        agent = QualityAgent()
+        agent = QualityAgent(config)
 
         return {
             "quality_results": agent.analyze(
