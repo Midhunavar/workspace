@@ -42,7 +42,8 @@ def _extract_json(text: str) -> dict:
             if isinstance(item, dict):
                 parsed = item
                 break
-        return {}
+        else:
+            return {}
 
     if isinstance(parsed, dict):
         for key in ("text", "content", "message"):
@@ -75,7 +76,7 @@ def _clamp(value, low, high):
 
 
 class SecurityAgent(BaseAgent):
-    def __init__(self, name: str = "security"):
+    def __init__(self, config, name: str = "security"):
         super().__init__(name)
         self.model = get_review_llm()
 
@@ -119,6 +120,11 @@ Do not invent vulnerabilities that are not supported by the evidence.
             text = getattr(response, "content", str(response))
             parsed = _extract_json(text)
 
+            assessment = parsed.get("assessment", "")
+            # If parsing fails, put the raw response in the assessment for debugging.
+            if not parsed:
+                assessment = f"Failed to parse LLM response: {text}"
+
             score = _clamp(
                 parsed.get("security_score", 0.0),
                 0.0,
@@ -137,10 +143,7 @@ Do not invent vulnerabilities that are not supported by the evidence.
                         "severity_counts",
                         {},
                     ),
-                    "assessment": parsed.get(
-                        "assessment",
-                        text,
-                    ),
+                    "assessment": assessment,
                 }
             )
 
