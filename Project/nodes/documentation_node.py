@@ -7,11 +7,12 @@ description for the contract.
 """
 from state import ReviewState
 from agents.documentation_agent import DocumentationAgent
+from config import config
 
 
 def documentation_node(state: ReviewState) -> dict:
     try:
-        agent = DocumentationAgent()
+        agent = DocumentationAgent(config)
 
         return {
             "documentation_results": agent.analyze(
