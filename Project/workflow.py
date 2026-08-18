@@ -5,20 +5,24 @@ Implement build_review_workflow(): compile build_review_graph() with a durable S
 checkpointer, cached as a process-wide singleton so a paused HITL run survives interface reruns. See
 the problem description for the contract.
 """
-from functools import lru_cache
-
 import sqlite3
+
+import streamlit as st
 from langgraph.checkpoint.sqlite import SqliteSaver
+
 from config import config
 from graph import build_review_graph
 
-checkpointer = SqliteSaver(conn=sqlite3.connect(config.checkpoint_db_path, check_same_thread=False))
 
+@st.cache_resource
+def build_review_workflow():
+    connection = sqlite3.connect(
+        config.checkpoint_db_path,
+        check_same_thread=False,
+    )
 
-@lru_cache(maxsize=1)
-def get_workflow():
+    checkpointer = SqliteSaver(connection)
+
     graph = build_review_graph()
 
-    return graph.compile(
-        checkpointer=checkpointer
-    )
+    return graph.compile(checkpointer=checkpointer)
