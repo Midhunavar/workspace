@@ -73,7 +73,7 @@ def _clamp(value, low, high):
 
 class CoverageAgent(BaseAgent):
 
-    def __init__(self, name="coverage"):
+    def __init__(self, config, name="coverage"):
         super().__init__(name)
         self.model = get_review_llm()
 
