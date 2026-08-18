@@ -33,6 +33,9 @@ def route_after_decision(state: ReviewState) -> str:
     if state.get("decision") == "auto_approve":
         return "report"
 
+    if state.get("decision") == "documentation_review":
+        return "human_review"
+
     return "human_review"
 
 
