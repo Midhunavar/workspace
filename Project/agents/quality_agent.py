@@ -14,16 +14,50 @@ from utils.gemini_client import get_review_llm
 
 
 def _parse_json(text):
+    if not isinstance(text, str):
+        try:
+            text = json.dumps(text)
+        except Exception:
+            text = str(text)
+
     try:
-        return json.loads(text)
+        parsed = json.loads(text)
     except json.JSONDecodeError:
         match = re.search(r"\{.*\}", text, re.DOTALL)
 
         if match:
             try:
-                return json.loads(match.group(0))
+                parsed = json.loads(match.group(0))
             except json.JSONDecodeError:
-                pass
+                return {}
+        else:
+            return {}
+
+    if isinstance(parsed, list):
+        for item in parsed:
+            if isinstance(item, dict):
+                parsed = item
+                break
+        else:
+            return {}
+
+    if isinstance(parsed, dict):
+        for key in ("text", "content", "message"):
+            val = parsed.get(key)
+            if isinstance(val, str):
+                val_str = val.strip()
+                if val_str.startswith("{") or val_str.startswith("["):
+                    try:
+                        inner = json.loads(val_str)
+                    except Exception:
+                        continue
+                    if isinstance(inner, dict):
+                        return inner
+                    if isinstance(inner, list):
+                        for item in inner:
+                            if isinstance(item, dict):
+                                return item
+        return parsed
 
     return {}
 
