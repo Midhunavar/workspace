@@ -15,20 +15,52 @@ from utils.gemini_client import get_review_llm
 
 def _extract_json(text: str) -> dict:
     """Extract JSON from an LLM response."""
+    # Coerce non-string response content to a string for robust parsing
+    if not isinstance(text, str):
+        try:
+            text = json.dumps(text)
+        except Exception:
+            text = str(text)
+
     text = text.strip()
 
     try:
-        return json.loads(text)
+        parsed = json.loads(text)
     except json.JSONDecodeError:
-        pass
+        match = re.search(r"\{.*\}", text, re.DOTALL)
 
-    match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                parsed = json.loads(match.group(0))
+            except json.JSONDecodeError:
+                return {}
+        else:
+            return {}
 
-    if match:
-        try:
-            return json.loads(match.group(0))
-        except json.JSONDecodeError:
-            pass
+    if isinstance(parsed, list):
+        for item in parsed:
+            if isinstance(item, dict):
+                parsed = item
+                break
+        return {}
+
+    if isinstance(parsed, dict):
+        for key in ("text", "content", "message"):
+            val = parsed.get(key)
+            if isinstance(val, str):
+                val_str = val.strip()
+                if val_str.startswith("{") or val_str.startswith("["):
+                    try:
+                        inner = json.loads(val_str)
+                    except Exception:
+                        continue
+                    if isinstance(inner, dict):
+                        return inner
+                    if isinstance(inner, list):
+                        for item in inner:
+                            if isinstance(item, dict):
+                                return item
+        return parsed
 
     return {}
 
