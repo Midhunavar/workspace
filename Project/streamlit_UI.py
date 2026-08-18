@@ -162,3 +162,4 @@ def render_app(run_review, approve_review, reject_review, recent_reviews) -> Non
         for item in report["action_items"]:
             st.markdown(f"- {item}")
     render_findings(values)
+
