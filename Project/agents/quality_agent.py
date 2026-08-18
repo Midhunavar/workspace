@@ -73,7 +73,7 @@ def _clamp(value, low, high):
 
 class QualityAgent(BaseAgent):
 
-    def __init__(self, name="quality"):
+    def __init__(self, config, name="quality"):
         super().__init__(name)
         self.model = get_review_llm()
 
