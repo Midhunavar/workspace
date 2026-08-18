@@ -25,8 +25,15 @@ class GitHubClient:
         if config.github_token:
             self.headers["Authorization"] = f"token {config.github_token}"
 
-    def get_pr_files(self, repo_owner: str, repo_name: str, pr_number: int) -> List[Dict[str, Any]]:
+    def get_pr_files(self, pr_details: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Return the PR's changed Python files with their content."""
+        repo_owner = pr_details.get("repo_owner")
+        repo_name = pr_details.get("repo_name")
+        pr_number = pr_details.get("pr_number")
+
+        if not all([repo_owner, repo_name, pr_number]):
+            raise ValueError("Missing required PR details: owner, repo, and PR number.")
+
         url = f"{self.api_url}/repos/{repo_owner}/{repo_name}/pulls/{pr_number}/files"
         response = requests.get(url, headers=self.headers, timeout=15)
         response.raise_for_status()
