@@ -9,12 +9,14 @@ def approve_review(
     compiled_graph,
     thread_id: str,
 ) -> dict:
+    # Resume the paused run and supply the human decision so the
+    # resumed state contains `human_decision` for downstream nodes.
     return compiled_graph.invoke(
         None,
         {
             "configurable": {"thread_id": thread_id}
         },
-        resume_from="approve",
+        resume_from={"human_decision": "approve"},
     )
 
 
@@ -22,10 +24,12 @@ def reject_review(
     compiled_graph,
     thread_id: str,
 ) -> dict:
+    # Resume the paused run and supply the human decision so the
+    # resumed state contains `human_decision` for downstream nodes.
     return compiled_graph.invoke(
         None,
         {
             "configurable": {"thread_id": thread_id}
         },
-        resume_from="reject",
+        resume_from={"human_decision": "reject"},
     )
