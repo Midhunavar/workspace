@@ -13,16 +13,51 @@ from utils.gemini_client import get_review_llm
 
 
 def _parse_json(text):
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
+    # Ensure we have a string to feed to json.loads (some SDK responses may be lists/dicts)
+    if not isinstance(text, str):
+        try:
+            text = json.dumps(text)
+        except Exception:
+            text = str(text)
 
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        # fallback: try to extract an embedded JSON object
+        match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
             try:
-                return json.loads(match.group(0))
+                parsed = json.loads(match.group(0))
             except json.JSONDecodeError:
-                pass
+                return {}
+        else:
+            return {}
+
+    # If LLM returned a list, try to find the first dict element
+    if isinstance(parsed, list):
+        for item in parsed:
+            if isinstance(item, dict):
+                parsed = item
+                break
+        return {}
+    # If the dict contains a nested JSON string in common fields, parse that
+    if isinstance(parsed, dict):
+        for key in ("text", "content", "message"):
+            val = parsed.get(key)
+            if isinstance(val, str):
+                val_str = val.strip()
+                if val_str.startswith("{") or val_str.startswith("["):
+                    try:
+                        inner = json.loads(val_str)
+                    except Exception:
+                        continue
+                    if isinstance(inner, dict):
+                        return inner
+                    if isinstance(inner, list):
+                        for item in inner:
+                            if isinstance(item, dict):
+                                return item
+        return parsed
 
     return {}
 
@@ -82,8 +117,16 @@ overall_score and confidence must be between 0 and 1.
 
             response = self.model.invoke(prompt)
 
-            text = getattr(response, "content", str(response))
-            parsed = _parse_json(text)
+            raw_content = getattr(response, "content", response)
+            parsed = _parse_json(raw_content)
+            # normalize raw_response as a string for tests/UI
+            if isinstance(raw_content, str):
+                raw_text = raw_content
+            else:
+                try:
+                    raw_text = json.dumps(raw_content)
+                except Exception:
+                    raw_text = str(raw_content)
 
             results.append(
                 {
@@ -98,7 +141,7 @@ overall_score and confidence must be between 0 and 1.
                         0,
                         1,
                     ),
-                    "raw_response": text,
+                    "raw_response": raw_text,
                 }
             )
 
