@@ -123,10 +123,10 @@ def build_review_graph():
     graph.add_conditional_edges(
         "decision",
         route_after_decision,
-        [
-            "report",
-            "human_review",
-        ],
+        {
+            "report": "report",
+            "human_review": "human_review",
+        },
     )
 
     graph.add_edge(
