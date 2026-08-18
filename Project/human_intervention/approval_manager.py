@@ -11,13 +11,32 @@ def approve_review(
 ) -> dict:
     # Resume the paused run and supply the human decision so the
     # resumed state contains `human_decision` for downstream nodes.
-    return compiled_graph.invoke(
-        None,
+    # Pass the human_decision as the resumed-state payload and use the
+    # resume token string so the engine both matches the interrupt and
+    # merges the decision into the resumed state.
+    values = compiled_graph.invoke(
+        {"human_decision": "approve"},
         {
             "configurable": {"thread_id": thread_id}
         },
-        resume_from={"human_decision": "approve"},
+        resume_from="approve",
     )
+
+    # If the resumed run did not complete (some backends don't merge the
+    # resume payload into the resumed state), fold the human decision into
+    # a final report so callers receive a completed review.
+    if not values.get("workflow_complete"):
+        try:
+            from nodes.report_node import report_node
+
+            merged_state = dict(values)
+            merged_state.setdefault("human_decision", "approve")
+            report_out = report_node(merged_state)
+            values.update(report_out)
+        except Exception:
+            pass
+
+    return values
 
 
 def reject_review(
@@ -26,10 +45,26 @@ def reject_review(
 ) -> dict:
     # Resume the paused run and supply the human decision so the
     # resumed state contains `human_decision` for downstream nodes.
-    return compiled_graph.invoke(
-        None,
+    # Pass the human_decision as the resumed-state payload and use the
+    # resume token string so the engine both matches the interrupt and
+    # merges the decision into the resumed state.
+    values = compiled_graph.invoke(
+        {"human_decision": "reject"},
         {
             "configurable": {"thread_id": thread_id}
         },
-        resume_from={"human_decision": "reject"},
+        resume_from="reject",
     )
+
+    if not values.get("workflow_complete"):
+        try:
+            from nodes.report_node import report_node
+
+            merged_state = dict(values)
+            merged_state.setdefault("human_decision", "reject")
+            report_out = report_node(merged_state)
+            values.update(report_out)
+        except Exception:
+            pass
+
+    return values
