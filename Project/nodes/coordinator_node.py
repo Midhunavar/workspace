@@ -5,16 +5,15 @@ Implement coordinator_node(state): average each analysis dimension across files 
 coordination_summary. See the problem description for the exact summary keys and the per-file source
 field each average reads.
 """
+from typing import List
 from state import ReviewState
 
 
-def _average(values):
-    values = [float(v) for v in values if v is not None]
-
+def _average(values: List[float]) -> float:
     if not values:
         return 0.0
 
-    return sum(values) / len(values)
+    return sum(float(value) for value in values) / len(values)
 
 
 def coordinator_node(state: ReviewState) -> dict:
@@ -27,84 +26,63 @@ def coordinator_node(state: ReviewState) -> dict:
         [],
     )
 
-    avg_security = _average(
+    total_files_analyzed = len(security_results)
+
+    avg_security_score = _average(
         [
-            result.get("security_score", 0)
+            result.get("security_score", 0.0)
             for result in security_results
         ]
     )
 
-    avg_quality = _average(
+    avg_quality_score = _average(
         [
-            result.get("score", 0)
+            result.get("score", 0.0)
             for result in quality_results
         ]
     )
 
     avg_coverage = _average(
         [
-            result.get("coverage_percent", 0)
+            result.get("coverage_percent", 0.0)
             for result in coverage_results
         ]
     )
 
-    avg_ai = _average(
+    avg_ai_score = _average(
         [
-            result.get("overall_score", 0)
+            result.get("overall_score", 0.0)
             for result in ai_reviews
         ]
     )
 
     avg_documentation = _average(
         [
-            result.get("documentation_coverage", 0)
+            result.get("documentation_coverage", 0.0)
             for result in documentation_results
         ]
     )
 
-    high_severity_count = 0
+    analyses_completed = sum(
+        [
+            bool(security_results),
+            bool(quality_results),
+            bool(coverage_results),
+            bool(ai_reviews),
+            bool(documentation_results),
+        ]
+    )
 
-    for result in security_results:
-        severity_counts = result.get(
-            "severity_counts",
-            {},
-        )
-
-        high_severity_count += int(
-            severity_counts.get("HIGH", 0)
-        )
-
-    summary = {
-        "avg_security_score": avg_security,
-        "avg_quality_score": avg_quality,
+    coordination_summary = {
+        "total_files_analyzed": total_files_analyzed,
+        "analyses_completed": analyses_completed,
+        "avg_security_score": avg_security_score,
+        "avg_quality_score": avg_quality_score,
         "avg_coverage": avg_coverage,
-        "avg_ai_score": avg_ai,
+        "avg_ai_score": avg_ai_score,
         "avg_documentation": avg_documentation,
     }
 
     return {
-        "coordination_summary": summary,
-        "critical_issues": [
-            {
-                "filename": result.get("filename"),
-                "severity_counts": result.get(
-                    "severity_counts",
-                    {},
-                ),
-            }
-            for result in security_results
-            if result.get("severity_counts", {}).get(
-                "HIGH",
-                0,
-            )
-            > 0
-        ],
-        "decision_metrics": {
-            "security_score": avg_security,
-            "pylint_score": avg_quality,
-            "coverage": avg_coverage,
-            "ai_score": avg_ai,
-            "documentation_coverage": avg_documentation,
-            "high_severity_issues": high_severity_count,
-        },
+        "coordination_summary": coordination_summary
     }
